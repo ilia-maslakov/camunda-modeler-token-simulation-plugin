@@ -6340,11 +6340,15 @@ __webpack_require__.r(__webpack_exports__);
 function ActivityBehavior(
     simulator,
     scopeBehavior,
-    transactionBehavior
+    transactionBehavior,
+    processBehavior,
+    elementRegistry
 ) {
   this._simulator = simulator;
   this._scopeBehavior = scopeBehavior;
   this._transactionBehavior = transactionBehavior;
+  this._processBehavior = processBehavior;
+  this._elementRegistry = elementRegistry;
 
   const elements = [
     'bpmn:BusinessRuleTask',
@@ -6364,7 +6368,9 @@ function ActivityBehavior(
 ActivityBehavior.$inject = [
   'simulator',
   'scopeBehavior',
-  'transactionBehavior'
+  'transactionBehavior',
+  'processBehavior',
+  'elementRegistry'
 ];
 
 ActivityBehavior.prototype.signal = function(context) {
@@ -6374,6 +6380,7 @@ ActivityBehavior.prototype.signal = function(context) {
 
   if (event) {
     return this.signalOnEvent(context, event);
+  }
   }
 
   this._simulator.exit(context);
@@ -6396,6 +6403,23 @@ ActivityBehavior.prototype.enter = function(context) {
 
   if (event) {
     return this.signalOnEvent(context, event);
+  }
+
+  if ((0,_util_ModelUtil__WEBPACK_IMPORTED_MODULE_0__.is)(element, 'bpmn:CallActivity')) {
+    var businessObject = (0,_util_ModelUtil__WEBPACK_IMPORTED_MODULE_0__.getBusinessObject)(element);
+    var calledElement = businessObject && businessObject.get('calledElement');
+
+    if (calledElement) {
+      var calledProcess = this._elementRegistry.get(calledElement);
+
+      if (calledProcess) {
+        return this._processBehavior.signal({
+          element: calledProcess,
+          scope: context.scope,
+          initiator: context.scope
+        });
+      }
+    }
   }
 
   this._simulator.exit(context);
